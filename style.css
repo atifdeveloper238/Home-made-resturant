@@ -1,0 +1,365 @@
+/* ============================================================
+   HOMEMADE FOOD SITE — shared styles
+   Palette: paper cream (#F7F1E4), deep maroon (#7A2331),
+            turmeric gold (#C88A1E), charcoal text (#2B2320)
+   Type: 'Fraunces' (serif, menu-card feel) for headings,
+         'Inter' for body/UI text
+   ============================================================ */
+ 
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap');
+ 
+:root {
+  --paper: #F7F1E4;
+  --paper-dark: #EDE3CC;
+  --maroon: #E8751A;
+  --maroon-dark: #C85D0F;
+  --gold: #F4A340;
+  --ink: #2D241F;
+  --ink-soft: #75685D;
+  --line: #E6D5BE;
+  --ok: #3E7A4C;
+  --warn: #B4531E;
+}
+ 
+* { box-sizing: border-box; }
+ 
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #FFF9F0 0%, var(--paper) 100%);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+ 
+h1, h2, h3, .display {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  color: var(--maroon);
+  margin: 0 0 0.4em;
+}
+ 
+a { color: var(--maroon); }
+ 
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+ 
+/* ---- Header ---- */
+.site-header {
+  border-bottom: 3px solid var(--maroon);
+  padding: 20px 20px 16px;
+  text-align: center;
+  background: #FFF1DF;
+}
+.site-header h1 { font-size: 2rem; letter-spacing: 0.01em; }
+.site-header .tagline { color: var(--ink-soft); font-size: 0.95rem; }
+.kitchen-meta {
+  margin-top: 10px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.kitchen-meta span { margin: 0 8px; }
+ 
+/* ---- Closed banner ---- */
+.closed-banner {
+  background: linear-gradient(135deg, var(--maroon), var(--gold));
+  color: var(--paper);
+  text-align: center;
+  padding: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+ 
+/* ---- Menu card ---- */
+.menu-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+}
+.menu-item img {
+  width: 84px; height: 84px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.menu-item .info { flex: 1; }
+.menu-item .name { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.1rem; }
+.menu-item .desc { color: var(--ink-soft); font-size: 0.9rem; margin: 2px 0 6px; }
+.menu-item .price { color: var(--gold); font-weight: 600; }
+.menu-item .qty-controls {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
+}
+.qty-btn {
+  width: 28px; height: 28px;
+  border: 1px solid var(--maroon);
+  background: none; color: var(--maroon);
+  font-size: 1rem; cursor: pointer;
+  border-radius: 10px;
+}
+.qty-btn:hover { background: linear-gradient(135deg, var(--maroon), var(--gold)); color: #fff; }
+ 
+/* ---- Buttons ---- */
+.btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--maroon), var(--gold));
+  color: var(--paper);
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.btn:hover { background: linear-gradient(135deg, var(--maroon-dark), var(--maroon)); }
+.btn:disabled { background: #ccc; color: #888; cursor: not-allowed; }
+.btn-outline {
+  background: none; border: 1.5px solid var(--maroon); border-radius: 10px; color: var(--maroon);
+}
+.btn-outline:hover { background: linear-gradient(135deg, var(--maroon), var(--gold)); color: #fff; }
+.btn-gold { background: linear-gradient(135deg, #FFB35A, var(--gold)); color: #3A281A; border-radius: 10px; }
+.btn-gold:hover { background: #D88925; }
+.btn-danger { background: linear-gradient(135deg, #E8751A, #C85D0F); }
+.btn-danger:hover { background: #A94D0B; }
+.btn-block { width: 100%; text-align: center; }
+ 
+/* ---- Forms ---- */
+label { display: block; font-weight: 600; margin: 14px 0 4px; font-size: 0.9rem; }
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--gold); }
+ 
+/* ---- Cart / summary panel ---- */
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 18px;
+  margin-top: 20px;
+}
+.panel-row {
+  display: flex; justify-content: space-between; padding: 4px 0;
+}
+.panel-row.total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 10px; font-weight: 700; }
+ 
+/* ---- Status badge ---- */
+.status {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 3px;
+}
+.status.pending { background: #F0E0B0; color: #6B4E00; }
+.status.confirmed { background: #CFE3D6; color: var(--ok); }
+.status.preparing { background: #E3D2F0; color: #5B2F8C; }
+.status.out_for_delivery { background: #CFE0F0; color: #1E5A8C; }
+.status.delivered { background: #D6EAD9; color: var(--ok); }
+.status.cancelled { background: #F0D0D0; color: var(--warn); }
+ 
+/* ---- Admin dashboard ---- */
+.admin-wrap { max-width: 960px; margin: 0 auto; padding: 20px; }
+.admin-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 14px; border-bottom: 2px solid var(--maroon); margin-bottom: 20px;
+}
+.tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 8px 16px; background: #FFF1DF; border: 1px solid var(--line);
+  cursor: pointer; font-weight: 600; font-size: 0.9rem;
+}
+.tab-btn.active { background: linear-gradient(135deg, var(--maroon), var(--gold)); color: #fff; border-color: var(--maroon); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.order-card {
+  background: rgba(255,255,255,0.92); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(90,55,20,0.07); border-radius: 14px; padding: 16px; margin-bottom: 12px;
+}
+.order-card-top { display: flex; justify-content: space-between; align-items: center; }
+.toggle-row { display: flex; align-items: center; gap: 12px; }
+.switch { position: relative; width: 50px; height: 26px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: #ccc; transition: 0.2s; border-radius: 26px;
+}
+.slider:before {
+  position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+  background: white; transition: 0.2s; border-radius: 50%;
+}
+input:checked + .slider { background: var(--ok); }
+input:checked + .slider:before { transform: translateX(24px); }
+ 
+/* ---- Chat ---- */
+.chat-box {
+  border: 1px solid var(--line); background: #fff; height: 260px;
+  overflow-y: auto; padding: 12px; margin-bottom: 10px;
+}
+.chat-msg { margin-bottom: 8px; max-width: 80%; padding: 8px 12px; font-size: 0.9rem; }
+.chat-msg.customer { background: #FFF1DF; margin-right: auto; }
+.chat-msg.admin { background: linear-gradient(135deg, var(--maroon), var(--gold)); color: #fff; margin-left: auto; text-align: right; }
+.chat-input-row { display: flex; gap: 8px; }
+.chat-input-row input { flex: 1; }
+ 
+/* ---- Utility ---- */
+.muted { color: var(--ink-soft); font-size: 0.88rem; }
+.hidden { display: none !important; }
+.mb { margin-bottom: 16px; }
+.center { text-align: center; }
+ 
+/* ---- Print (mini printer receipt) ---- */
+/* Change this one value if your roll is 80mm instead of 58mm */
+:root { --receipt-width: 72mm; }
+ 
+@media print {
+  @page {
+    size: var(--receipt-width) auto; /* auto height = works with continuous roll paper */
+    margin: 0;
+  }
+  body * { visibility: hidden; }
+  #receipt, #receipt * { visibility: visible; }
+  #receipt {
+    display: block !important;
+    position: absolute; top: 0; left: 0;
+    width: var(--receipt-width);
+    font-size: 11px;
+    padding: 2mm;
+  }
+}
+ 
+
+
+/* ============================================================
+   MODERN ORANGE THEME — visual polish only
+   No HTML elements or functionality are changed.
+   ============================================================ */
+
+.site-header {
+  box-shadow: 0 5px 18px rgba(110, 65, 20, 0.08);
+}
+
+.site-header h1 {
+  text-shadow: 0 2px 12px rgba(232, 117, 26, 0.12);
+}
+
+.menu-item {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.menu-item:hover {
+  background: rgba(255, 241, 223, 0.55);
+}
+
+.menu-item img {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(90, 55, 20, 0.10);
+}
+
+.qty-btn {
+  border-color: var(--maroon);
+  background: #FFF7ED;
+  color: var(--maroon);
+  font-weight: 700;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+}
+
+.qty-btn:hover {
+  background: var(--maroon);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn {
+  border-radius: 10px;
+  box-shadow: 0 5px 14px rgba(232, 117, 26, 0.20);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(200, 93, 15, 0.24);
+  filter: brightness(1.03);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  background: var(--maroon);
+  color: #fff;
+}
+
+.btn-gold {
+  box-shadow: 0 5px 14px rgba(244, 163, 64, 0.22);
+}
+
+input, textarea, select {
+  border-radius: 9px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(244, 163, 64, 0.18);
+}
+
+.tab-btn {
+  border-radius: 9px;
+  transition: all 0.18s ease;
+}
+
+.tab-btn.active {
+  box-shadow: 0 4px 12px rgba(232, 117, 26, 0.18);
+}
+
+.order-card,
+.panel,
+.chat-box {
+  box-shadow: 0 6px 20px rgba(90, 55, 20, 0.06);
+  border-radius: 14px;
+}
+
+.chat-msg {
+  border-radius: 12px;
+}
+
+.chat-msg.admin {
+  background: linear-gradient(135deg, var(--maroon), var(--gold));
+}
+
+.status {
+  border-radius: 999px;
+}
+
+/* ============================================================
+   ADDED — variants, riders tab, edit-in-place, tracking tabs
+   Purely additive, nothing above this line was changed.
+   ============================================================ */
+
+.variant-list { margin-top: 8px; }
+.variant-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-top: 1px solid var(--line);
+}
+.variant-row-info { display: flex; flex-direction: column; }
+.variant-name { font-weight: 600; }
+.variant-desc { color: var(--ink-soft); font-size: 0.85rem; }
+.variant-price { color: var(--gold); font-weight: 600; font-size: 0.9rem; }
+
+.rider-select { margin-bottom: 6px; }
