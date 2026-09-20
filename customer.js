@@ -275,7 +275,37 @@ function customerLogout() {
 }
 
 async function updateAccount() {
-  alert('To change your saved name or location, please contact us via chat — account editing is coming soon.');
+  const name = document.getElementById('custName')?.value.trim() || document.getElementById('profileName')?.value.trim();
+  const phone = document.getElementById('custPhone')?.value.trim() || document.getElementById('profilePhone')?.value.trim();
+  const location = document.getElementById('custLocation')?.value.trim() || document.getElementById('profileLocation')?.value.trim();
+
+  if (!name || !phone || !location) {
+    alert('Please fill in every field.');
+    return;
+  }
+
+  const currentCustomer = JSON.parse(localStorage.getItem('customer'));
+  if (!currentCustomer || !currentCustomer.id) {
+    alert('Please login again');
+    return;
+  }
+
+  const { data, error } = await supabaseClient.rpc('customer_update_profile', {
+    p_id: currentCustomer.id,
+    p_name: name,
+    p_phone: phone,
+    p_location: location
+  });
+
+  if (error) {
+    alert("Update Failed: " + error.message);
+    console.error(error);
+    return;
+  }
+
+  localStorage.setItem('customer', JSON.stringify(data));
+  setCustomer(data);
+  alert('Profile Updated Successfully! Name, Phone, Location sab change ho gaya hai.');
 }
 
 async function loadSettings() {
