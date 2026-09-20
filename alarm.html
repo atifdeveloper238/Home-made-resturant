@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Alarm - Atif Bhai</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+ body{background:#111;color:#fff;font-family:system-ui;padding:20px;text-align:center}
+ button{padding:18px;font-size:20px;font-weight:bold;border-radius:12px;width:100%;border:none;margin-top:15px;cursor:pointer}
+ .on{background:#00ff88;color:#000} .off{background:#222;color:#fff}
+ .order{background:#222;padding:15px;border-radius:10px;margin-top:15px;text-align:left;border-left:5px solid #00ff88}
+</style>
+</head>
+<body>
+<h1>🍔 Live Order Alarm</h1>
+<p>یہ پیج کھلا رہنے دیں، آرڈر آتے ہی تیز آواز بجے گی</p>
+<button id="enableBtn" class="on">🔊 آواز اور نوٹیفکیشن آن کریں (پہلے اس پر کلک کریں)</button>
+<div id="status" style="margin-top:10px;color:#00ff88"></div>
+<div id="orders"></div>
+
+<audio id="alarm" loop preload="auto">
+  <source src="./meri-tune.mp3" type="audio/ogg">
+</audio>
+
+<script>
+// ==== یہاں اپنی Supabase کی ڈیٹیل ڈالیں ====
+const SUPABASE_URL = "https://kahmpvgqzxarsegnrogr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_rlRMyly8iVoOlqn9MMRVow_jgjVaWtx";
+const TABLE_NAME = "orders"; // آپ کی ٹیبل کا نام جو بھی ہے، جیسے orders
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let wakeLock = null;
+
+async function enableAll(){
+  const audio = document.getElementById('alarm');
+  audio.volume = 1.0;
+  await audio.play(); audio.pause();
+  if('Notification' in window) await Notification.requestPermission();
+  if('wakeLock' in navigator){ try{ wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+  document.getElementById('status').innerText = "✅ آن ہو گیا! اب یہ خود آرڈر سنے گا";
+  document.getElementById('enableBtn').innerText = "✅ آن ہے";
+  startRealtime();
+}
+
+function bajaoTezAwaz(order){
+  const audio = document.getElementById('alarm');
+  audio.currentTime=0; audio.play();
+  if(navigator.vibrate) navigator.vibrate([500,200,500,200,1000]);
+  if(Notification.permission==='granted'){
+    new Notification("🔥 نیا آرڈر آیا ہے!", {body: `کسٹمر: ${order.customer_name || 'نیا کسٹمر'} - Rs. ${order.total || ''}`, requireInteraction:true});
+  }
+  setTimeout(()=>audio.pause(), 30000);
+  
+  const div = document.getElementById('orders');
+  div.innerHTML = `<div class="order"><b>🔥 نیا آرڈر - ${new Date().toLocaleTimeString()}</b><br>${JSON.stringify(order)}<br><button onclick="document.getElementById('alarm').pause()" style="background:red;color:white;padding:10px;margin-top:10px">🔇 آواز بند کریں</button></div>` + div.innerHTML;
+}
+
+function startRealtime(){
+  console.log("Supabase Realtime ON - Table:", TABLE_NAME);
+  supabaseClient.channel('orders-channel')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:TABLE_NAME}, payload=>{
+      console.log("New Order:", payload.new);
+      bajaoTezAwaz(payload.new);
+    }).subscribe();
+}
+
+document.getElementById('enableBtn').onclick = enableAll;
+</script>
+</body>
+</html>
