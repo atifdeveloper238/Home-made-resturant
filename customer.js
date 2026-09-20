@@ -1,19 +1,12 @@
 // ============================================================
-// CUSTOMER PAGE LOGIC
-// UPDATED: size variants, order tracking tab, chat notifications,
-// realtime chat bug fixed, image compression now targets 2-3KB.
+// CUSTOMER PAGE LOGIC - FINAL FIXED
 // ============================================================
 
 let MENU = [];
 let SETTINGS = null;
 let CUSTOMER = null;
-const cart = {}; // key = item.id  OR  `${item.id}::${variant.id}` for variant items
+const cart = {};
 
-// ---- IMAGE COMPRESS (targets 2-3KB output, as requested) ----
-// NOTE: 2-3KB is a very small target for a real photo — expect
-// roughly 100-150px wide and visibly soft. If payment screenshots
-// need to stay legible (amount/TrxID readable), consider raising
-// this in the two calls below (search "targetKB:").
 async function compressImage(file, targetKB = 3, minTargetKB = 2) {
   const targetBytes = targetKB * 1024;
   const img = await new Promise((resolve, reject) => {
@@ -22,11 +15,9 @@ async function compressImage(file, targetKB = 3, minTargetKB = 2) {
     im.onerror = reject;
     im.src = URL.createObjectURL(file);
   });
-
   let quality = 0.7;
   let maxWidth = 800;
   let blob = await drawAndCompress(img, maxWidth, quality);
-
   let attempts = 0;
   while (blob.size > targetBytes && attempts < 14) {
     attempts++;
@@ -38,7 +29,7 @@ async function compressImage(file, targetKB = 3, minTargetKB = 2) {
     }
     blob = await drawAndCompress(img, maxWidth, quality);
   }
-
+  URL.revokeObjectURL(img.src);
   return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
 }
 
@@ -58,21 +49,17 @@ function drawAndCompress(img, maxWidth, quality) {
   });
 }
 
-// ---- NOTIFICATIONS ----
 function initNotifications() {
   if ('Notification' in window && Notification.permission === 'default') {
-    // Ask once, quietly, not blocking anything if the user ignores it.
     Notification.requestPermission();
   }
 }
-
 function notifyBrowser(title, body) {
   playBeep();
   if ('Notification' in window && Notification.permission === 'granted') {
-    try { new Notification(title, { body, icon: '/icon-192.png' }); } catch (e) { /* ignore */ }
+    try { new Notification(title, { body, icon: '/icon-192.png' }); } catch (e) {}
   }
 }
-
 function playBeep() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -85,35 +72,28 @@ function playBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     osc.start();
     osc.stop(ctx.currentTime + 0.25);
-  } catch (e) { /* ignore — audio may be blocked before user interacts with the page */ }
+  } catch (e) {}
 }
-
 function showAuthTab(name) {
   document.querySelectorAll('[data-authtab]').forEach(b => b.classList.toggle('active', b.dataset.authtab === name));
-  document.getElementById('authtab-login').classList.toggle('active', name === 'login');
-  document.getElementById('authtab-signup').classList.toggle('active', name === 'signup');
+  document.getElementById('authtab-login')?.classList.toggle('active', name === 'login');
+  document.getElementById('authtab-signup')?.classList.toggle('active', name === 'signup');
 }
-
-// ---- CUSTOMER PAGE TABS (Menu / Track Order) ----
 function showCustomerTab(name) {
   document.querySelectorAll('[data-customertab]').forEach(b => b.classList.toggle('active', b.dataset.customertab === name));
-  document.getElementById('customertab-menu').classList.toggle('active', name === 'menu');
-  document.getElementById('customertab-track').classList.toggle('active', name === 'track');
-  if (name === 'track') {
-    renderTrackTab();
-  }
+  document.getElementById('customertab-menu')?.classList.toggle('active', name === 'menu');
+  document.getElementById('customertab-track')?.classList.toggle('active', name === 'track');
+  if (name === 'track') renderTrackTab();
 }
-
 function renderTrackTab() {
   const wrap = document.getElementById('trackMyOrdersWrap');
   if (CUSTOMER) {
-    wrap.classList.remove('hidden');
+    wrap?.classList.remove('hidden');
     loadMyOrders();
   } else {
-    wrap.classList.add('hidden');
+    wrap?.classList.add('hidden');
   }
 }
-
 async function trackOrderById() {
   const id = document.getElementById('trackOrderIdInput').value.trim();
   const resultEl = document.getElementById('trackResult');
@@ -121,24 +101,23 @@ async function trackOrderById() {
   resultEl.classList.add('hidden');
   notFoundEl.classList.add('hidden');
   if (!id) return;
-
   const { data, error } = await supabaseClient.from('orders').select('*').eq('id', id).single();
-  if (error || !data) {
+  if (error ||!data) {
     notFoundEl.classList.remove('hidden');
     return;
   }
-
   resultEl.innerHTML = `
     <h3>Order #${data.id}</h3>
     <span class="status ${data.status}">${STATUS_LABELS[data.status] || data.status}</span>
     <div class="panel-row" style="margin-top:14px"><span>Items</span></div>
     ${data.items.map(i => `<div class="panel-row"><span>${i.name} × ${i.qty}</span><span>Rs. ${i.price * i.qty}</span></div>`).join('')}
     <div class="panel-row total"><span>Total (incl. delivery)</span><span>Rs. ${data.total}</span></div>
-    ${data.rider_name ? `<p class="muted" style="margin-top:12px">Rider: <strong>${data.rider_name}</strong> — ${data.rider_phone || ''}</p>` : ''}
+    ${data.rider_name? `<p class="muted" style="margin-top:12px">Rider: <strong>${data.rider_name}</strong> — ${data.rider_phone || ''}</p>` : ''}
   `;
   resultEl.classList.remove('hidden');
 }
 
+// ===== FIXED SESSION RESTORE =====
 async function restoreSession() {
   try {
     const saved = localStorage.getItem('customer');
@@ -146,29 +125,37 @@ async function restoreSession() {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.id) {
         CUSTOMER = parsed;
-        // background me fresh data le lo
+        document.getElementById('accountPanel')?.classList.remove('hidden');
+        document.getElementById('authPanel')?.classList.add('hidden');
         const { data } = await supabaseClient.rpc('customer_get', { p_id: parsed.id });
-        if (data && data.length > 0) {
-          setCustomer(data[0]);
-        } else {
-          setCustomer(parsed);
-        }
+        if (data && data.length > 0) setCustomer(data[0]);
+        else setCustomer(parsed);
         return;
       }
     }
   } catch(e) {}
-  // purani key ka support agar pehle kabhi save hui ho
   const id = localStorage.getItem('customer_id');
   if (!id) return;
   const { data } = await supabaseClient.rpc('customer_get', { p_id: id });
   if (data && data.length > 0) setCustomer(data[0]);
 }
+
 function setCustomer(c) {
-  if (!c || !c.id) return; // ye line add karo sab se upar
+  if (!c ||!c.id) return;
   CUSTOMER = c;
   localStorage.setItem('customer', JSON.stringify(c));
   localStorage.setItem('customer_id', c.id);
-  // baaki aapka purana code waisa hi rehne do
+  document.getElementById('accountPanel')?.classList.remove('hidden');
+  document.getElementById('authPanel')?.classList.add('hidden');
+  if (document.getElementById('custName')) document.getElementById('custName').value = c.name || '';
+  if (document.getElementById('custPhone')) document.getElementById('custPhone').value = c.phone || '';
+  if (document.getElementById('custLocation')) document.getElementById('custLocation').value = c.location || '';
+  if (document.getElementById('profileName')) document.getElementById('profileName').value = c.name || '';
+  if (document.getElementById('profilePhone')) document.getElementById('profilePhone').value = c.phone || '';
+  if (document.getElementById('profileLocation')) document.getElementById('profileLocation').value = c.location || '';
+  loadMyOrders();
+  loadChat();
+  subscribeChat();
 }
 
 const STATUS_LABELS = {
@@ -178,22 +165,10 @@ const STATUS_LABELS = {
 
 async function loadMyOrders() {
   if (!CUSTOMER) return;
-  const { data, error } = await supabaseClient
-  .from('orders').select('*').eq('customer_id', CUSTOMER.id).order('id', { ascending: false });
-  const targets = ['myOrdersList', 'myOrdersListTrack']
-    .map(id => document.getElementById(id))
-    .filter(Boolean);
+  const { data, error } = await supabaseClient.from('orders').select('*').eq('customer_id', CUSTOMER.id).order('id', { ascending: false });
+  const targets = ['myOrdersList', 'myOrdersListTrack'].map(id => document.getElementById(id)).filter(Boolean);
   if (targets.length === 0) return;
-
-  const html = (error || !data || data.length === 0)
-    ? '<p class="muted">No orders yet.</p>'
-    : data.map(o => `
-        <div class="panel-row" style="border-bottom:1px solid var(--line); padding:8px 0">
-          <span>Order #${o.id} — ${new Date(o.created_at).toLocaleDateString()} — Rs. ${o.total}</span>
-          <span class="status ${o.status}">${STATUS_LABELS[o.status] || o.status}</span>
-        </div>
-      `).join('');
-
+  const html = (error ||!data || data.length === 0)? '<p class="muted">No orders yet.</p>' : data.map(o => `<div class="panel-row" style="border-bottom:1px solid var(--line); padding:8px 0"><span>Order #${o.id} — ${new Date(o.created_at).toLocaleDateString()} — Rs. ${o.total}</span><span class="status ${o.status}">${STATUS_LABELS[o.status] || o.status}</span></div>`).join('');
   targets.forEach(el => el.innerHTML = html);
 }
 
@@ -204,20 +179,19 @@ async function customerSignup() {
   const location = document.getElementById('signupLocation').value.trim();
   const errEl = document.getElementById('signupErr');
   errEl.classList.add('hidden');
-  if (!name || !phone || !password || !location) {
+  if (!name ||!phone ||!password ||!location) {
     errEl.textContent = 'Please fill in every field.';
     errEl.classList.remove('hidden');
     return;
   }
-  const { data, error } = await supabaseClient.rpc('customer_signup', {
-    p_phone: phone, p_password: password, p_name: name, p_location: location
-  });
+  const { data, error } = await supabaseClient.rpc('customer_signup', { p_phone: phone, p_password: password, p_name: name, p_location: location });
   if (error) {
     errEl.textContent = error.message;
     errEl.classList.remove('hidden');
     return;
   }
-  setCustomer(data[0]);
+  const finalData = Array.isArray(data)? data[0] : data;
+  setCustomer(finalData);
 }
 
 async function customerLogin() {
@@ -226,14 +200,14 @@ async function customerLogin() {
   const errEl = document.getElementById('loginErr');
   errEl.classList.add('hidden');
   const { data, error } = await supabaseClient.rpc('customer_login', { p_phone: phone, p_password: password });
-  if (error || !data || data.length === 0) {
+  if (error ||!data || data.length === 0) {
     errEl.textContent = 'Incorrect phone number or password.';
     errEl.classList.remove('hidden');
     return;
   }
-  setCustomer(data[0]);
+  const finalData = Array.isArray(data)? data[0] : data;
+  setCustomer(finalData);
 }
-// line 232 ke baad ye paste kar dein
 
 async function customerUpdateProfile() {
   const name = document.getElementById('profileName').value.trim();
@@ -241,203 +215,88 @@ async function customerUpdateProfile() {
   const location = document.getElementById('profileLocation').value.trim();
   const errEl = document.getElementById('profileErr');
   errEl.classList.add('hidden');
-
   if (!name ||!phone ||!location) {
     errEl.textContent = 'Please fill in every field.';
     errEl.classList.remove('hidden');
     return;
   }
-
-  let currentCustomer = null;
-  try {
-    currentCustomer = JSON.parse(localStorage.getItem('customer'));
-  } catch(e) {}
-
+  let currentCustomer = CUSTOMER;
+  try { if (!currentCustomer) currentCustomer = JSON.parse(localStorage.getItem('customer')); } catch(e) {}
   if (!currentCustomer ||!currentCustomer.id) {
     errEl.textContent = 'Please login again';
     errEl.classList.remove('hidden');
     return;
   }
-
-  const { data, error } = await supabaseClient.rpc('customer_update_profile', {
-    p_id: currentCustomer.id,
-    p_name: name,
-    p_phone: phone,
-    p_location: location
-  });
-
+  const { data, error } = await supabaseClient.rpc('customer_update_profile', { p_id: currentCustomer.id, p_name: name, p_phone: phone, p_location: location });
   if (error) {
     errEl.textContent = error.message;
     errEl.classList.remove('hidden');
     return;
   }
-
   let updated = Array.isArray(data)? data[0] : data;
   if (!updated) updated = {...currentCustomer, name, phone, location };
-
   setCustomer(updated);
   alert('Profile Updated Successfully!');
-  closeModal('profileModal');
+  if (typeof closeModal === 'function') closeModal('profileModal');
 }
+
 function customerLogout() {
+  localStorage.removeItem('customer');
   localStorage.removeItem('customer_id');
   CUSTOMER = null;
-  document.getElementById('accountPanel').classList.add('hidden');
-  document.getElementById('authPanel').classList.remove('hidden');
+  document.getElementById('accountPanel')?.classList.add('hidden');
+  document.getElementById('authPanel')?.classList.remove('hidden');
+  if (typeof chatChannel!== 'undefined' && chatChannel) {
+    supabaseClient.removeChannel(chatChannel);
+  }
   supabaseClient.removeAllChannels();
+  location.reload();
 }
 
 async function updateAccount() {
-  const name = (document.getElementById('custName') || document.getElementById('profileName'))?.value.trim();
-  const phone = (document.getElementById('custPhone') || document.getElementById('profilePhone'))?.value.trim();
-  const location = (document.getElementById('custLocation') || document.getElementById('profileLocation'))?.value.trim();
-
-  if (!name || !phone || !location) {
-    alert('Please fill every field');
-    return;
-  }
-
-  let currentCustomer = null;
-  if (typeof CUSTOMER !== 'undefined' && CUSTOMER && CUSTOMER.id) {
-    currentCustomer = CUSTOMER;
-  } else {
-    try { 
-      currentCustomer = JSON.parse(localStorage.getItem('customer')); 
-    } catch(e) {}
-  }
-
-  if (!currentCustomer || !currentCustomer.id) {
-    alert('Session expired, please logout and login again');
-    return;
-  }
-
-  const { data, error } = await supabaseClient.rpc('customer_update_profile', {
-    p_id: currentCustomer.id, 
-    p_name: name, 
-    p_phone: phone, 
-    p_location: location
-  });
-
-  if (error) {
-    alert("Update Failed: " + error.message);
-    console.error(error);
-    return;
-  }
-
-  // اگر data null بھی آ جائے تو بھی کام چل جائے گا
-  let finalData = data;
-  if (!finalData) {
-    finalData = { ...currentCustomer, name: name, phone: phone, location: location };
-  }
-
-  CUSTOMER = finalData;
-  localStorage.setItem('customer', JSON.stringify(finalData));
-  
-  // اب setCustomer میں error نہیں آئے گا
-  if (typeof setCustomer === 'function') {
-    try {
-      const oldSetCustomer = setCustomer;
-      // 155 والی لائن کا error روکنے کے لیے
-      if (finalData && finalData.id) {
-        setCustomer(finalData);
-      }
-    } catch(e) { console.log("setCustomer error ignored", e); }
-  }
-
-  alert('Profile Updated Successfully!');
+  await customerUpdateProfile();
 }
 
 async function loadSettings() {
   const { data, error } = await supabaseClient.from('settings').select('*').eq('id', 1).single();
-  if (error || !data) return;
+  if (error ||!data) return;
   SETTINGS = data;
   document.getElementById('kitchenName').textContent = data.kitchen_name || 'Home Kitchen';
-  document.getElementById('kitchenPhone').textContent = data.kitchen_phone ? '📞 ' + data.kitchen_phone : '';
-  document.getElementById('kitchenLocation').textContent = data.kitchen_location ? '📍 ' + data.kitchen_location : '';
+  document.getElementById('kitchenPhone').textContent = data.kitchen_phone? '📞 ' + data.kitchen_phone : '';
+  document.getElementById('kitchenLocation').textContent = data.kitchen_location? '📍 ' + data.kitchen_location : '';
   document.getElementById('kitchenDesc').textContent = data.kitchen_description || '';
   document.getElementById('epName').textContent = data.easypaisa_account_name || '';
   document.getElementById('epNumber').textContent = data.easypaisa_account_number || '';
   document.getElementById('deliveryChargeDisplay').textContent = 'Rs. ' + Number(data.delivery_charge || 0);
-  if (!data.ordering_enabled) {
-    document.getElementById('closedBanner').classList.remove('hidden');
-  }
+  if (!data.ordering_enabled) document.getElementById('closedBanner')?.classList.remove('hidden');
 }
 
-// ---- MENU (now with optional size variants) ----
 async function loadMenu() {
-  const { data, error } = await supabaseClient
-  .from('menu_items').select('*').eq('available', true).order('created_at');
+  const { data, error } = await supabaseClient.from('menu_items').select('*').eq('available', true).order('created_at');
   const list = document.getElementById('menuList');
-  if (error || !data || data.length === 0) {
-    document.getElementById('noMenu').classList.remove('hidden');
-    return;
-  }
-  document.getElementById('noMenu').classList.add('hidden');
+  if (error ||!data || data.length === 0) { document.getElementById('noMenu')?.classList.remove('hidden'); return; }
+  document.getElementById('noMenu')?.classList.add('hidden');
   MENU = data;
-
   const variantItemIds = MENU.filter(m => m.has_variants).map(m => m.id);
   let variantsByItem = {};
   if (variantItemIds.length > 0) {
-    const { data: variantRows } = await supabaseClient
-      .from('menu_item_variants').select('*').in('menu_item_id', variantItemIds).order('sort_order');
+    const { data: variantRows } = await supabaseClient.from('menu_item_variants').select('*').in('menu_item_id', variantItemIds).order('sort_order');
     (variantRows || []).forEach(v => {
       if (!variantsByItem[v.menu_item_id]) variantsByItem[v.menu_item_id] = [];
       variantsByItem[v.menu_item_id].push(v);
     });
   }
   MENU.forEach(item => { item.variants = variantsByItem[item.id] || []; });
-
   list.innerHTML = MENU.map(item => {
     if (item.has_variants && item.variants.length > 0) {
-      return `
-        <div class="menu-item">
-          ${item.photo_url ? `<img src="${item.photo_url}" alt="${item.name}">` : ''}
-          <div class="info">
-            <div class="name">${item.name}</div>
-            <div class="desc">${item.description || ''}</div>
-            <div class="variant-list">
-              ${item.variants.map(v => {
-                const key = `${item.id}::${v.id}`;
-                return `
-                  <div class="variant-row">
-                    <div class="variant-row-info">
-                      <span class="variant-name">${v.variant_name}</span>
-                      <span class="variant-desc">${v.description || ''}</span>
-                      <span class="variant-price">Rs. ${v.price}</span>
-                    </div>
-                    <div class="qty-controls">
-                      <button class="qty-btn" onclick="changeQty('${key}', -1)">−</button>
-                      <span id="qty-${key.replace('::','-')}">0</span>
-                      <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      `;
+      return `<div class="menu-item">${item.photo_url? `<img src="${item.photo_url}" alt="${item.name}">` : ''}<div class="info"><div class="name">${item.name}</div><div class="desc">${item.description || ''}</div><div class="variant-list">${item.variants.map(v => { const key = `${item.id}::${v.id}`; return `<div class="variant-row"><div class="variant-row-info"><span class="variant-name">${v.variant_name}</span><span class="variant-desc">${v.description || ''}</span><span class="variant-price">Rs. ${v.price}</span></div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('${key}', -1)">−</button><span id="qty-${key.replace('::','-')}">0</span><button class="qty-btn" onclick="changeQty('${key}', 1)">+</button></div></div>`; }).join('')}</div></div></div>`;
     }
-    return `
-      <div class="menu-item">
-        ${item.photo_url ? `<img src="${item.photo_url}" alt="${item.name}">` : ''}
-        <div class="info">
-          <div class="name">${item.name}</div>
-          <div class="desc">${item.description || ''}</div>
-          <div class="price">Rs. ${item.price}</div>
-          <div class="qty-controls">
-            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
-            <span id="qty-${item.id}">0</span>
-            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
-          </div>
-        </div>
-      </div>
-    `;
+    return `<div class="menu-item">${item.photo_url? `<img src="${item.photo_url}" alt="${item.name}">` : ''}<div class="info"><div class="name">${item.name}</div><div class="desc">${item.description || ''}</div><div class="price">Rs. ${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button><span id="qty-${item.id}">0</span><button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button></div></div></div>`;
   }).join('');
 }
 
 function changeQty(key, delta) {
-  if (SETTINGS && !SETTINGS.ordering_enabled) return;
+  if (SETTINGS &&!SETTINGS.ordering_enabled) return;
   cart[key] = Math.max(0, (cart[key] || 0) + delta);
   const spanId = 'qty-' + key.replace('::', '-');
   const span = document.getElementById(spanId);
@@ -445,14 +304,12 @@ function changeQty(key, delta) {
   renderCart();
 }
 
-// Resolves a cart key (plain item id, or "itemId::variantId") to a
-// display name + unit price, whichever kind of item it is.
 function resolveCartLine(key) {
   if (key.includes('::')) {
     const [itemId, variantId] = key.split('::');
     const item = MENU.find(m => m.id === itemId);
-    const variant = item ? item.variants.find(v => v.id === variantId) : null;
-    if (!item || !variant) return null;
+    const variant = item? item.variants.find(v => v.id === variantId) : null;
+    if (!item ||!variant) return null;
     return { name: `${item.name} (${variant.variant_name})`, price: variant.price };
   }
   const item = MENU.find(m => m.id === key);
@@ -480,15 +337,15 @@ function renderCart() {
 
 function togglePaymentFields() {
   const method = document.getElementById('paymentMethod').value;
-  document.getElementById('easypaisaBox').classList.toggle('hidden', method !== 'easypaisa');
-  document.getElementById('onlineBox').classList.toggle('hidden', method !== 'online');
+  document.getElementById('easypaisaBox')?.classList.toggle('hidden', method!== 'easypaisa');
+  document.getElementById('onlineBox')?.classList.toggle('hidden', method!== 'online');
 }
 function toggleProof() {
   const selected = document.querySelector('input[name="paymentProof"]:checked');
   if (!selected) return;
   const val = selected.value;
-  document.getElementById('photoBox').classList.toggle('hidden', val !== 'photo');
-  document.getElementById('trxBox').classList.toggle('hidden', val !== 'trxid');
+  document.getElementById('photoBox')?.classList.toggle('hidden', val!== 'photo');
+  document.getElementById('trxBox')?.classList.toggle('hidden', val!== 'trxid');
 }
 window.toggleProof = toggleProof;
 
@@ -497,8 +354,7 @@ async function placeOrder() {
   errEl.classList.add('hidden');
   const btn = document.querySelector('[onclick="placeOrder()"]') || document.getElementById('placeOrderBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
-
-  if (SETTINGS && !SETTINGS.ordering_enabled) {
+  if (SETTINGS &&!SETTINGS.ordering_enabled) {
     errEl.textContent = 'Sorry, we are currently closed and not accepting orders.';
     errEl.classList.remove('hidden');
     if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
@@ -517,11 +373,9 @@ async function placeOrder() {
     if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
     return;
   }
-
   const method = document.getElementById('paymentMethod').value;
   let screenshotUrl = null;
   let paymentProofText = "";
-
   if (method === 'easypaisa') {
     const proofType = document.querySelector('input[name="paymentProof"]:checked')?.value || 'photo';
     if (proofType === 'trxid') {
@@ -534,7 +388,6 @@ async function placeOrder() {
         return;
       }
       paymentProofText = `TRXID: ${trxId} | Sender: ${senderNum}`;
-      screenshotUrl = null;
     } else {
       const fileInput = document.getElementById('screenshotInput');
       if (!fileInput.files[0]) {
@@ -548,8 +401,7 @@ async function placeOrder() {
         const originalFile = fileInput.files[0];
         const compressedFile = await compressImage(originalFile, 3, 2);
         const filePath = `${Date.now()}_${originalFile.name}`;
-        const { error: uploadErr } = await supabaseClient.storage
-        .from('payment-screenshots').upload(filePath, compressedFile);
+        const { error: uploadErr } = await supabaseClient.storage.from('payment-screenshots').upload(filePath, compressedFile);
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabaseClient.storage.from('payment-screenshots').getPublicUrl(filePath);
         screenshotUrl = urlData.publicUrl;
@@ -561,7 +413,6 @@ async function placeOrder() {
       }
     }
   }
-
   const items = lines.map(([key, qty]) => {
     const line = resolveCartLine(key);
     return { name: line.name, price: line.price, qty };
@@ -569,7 +420,6 @@ async function placeOrder() {
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const deliveryCharge = Number(SETTINGS?.delivery_charge || 0);
   const total = subtotal + deliveryCharge;
-
   const { data: orderId, error: idErr } = await supabaseClient.rpc('get_next_order_id');
   if (idErr) {
     errEl.textContent = 'Could not create order ID: ' + idErr.message;
@@ -577,7 +427,6 @@ async function placeOrder() {
     if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
     return;
   }
-
   const { data: orderData, error: orderErr } = await supabaseClient.from('orders').insert({
     id: orderId,
     customer_id: CUSTOMER.id,
@@ -591,20 +440,17 @@ async function placeOrder() {
     payment_screenshot_url: screenshotUrl,
     payment_proof: paymentProofText,
   }).select().single();
-
   if (orderErr) {
     errEl.textContent = 'Could not place order: ' + orderErr.message;
     errEl.classList.remove('hidden');
     if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
     return;
   }
-
   Object.keys(cart).forEach(k => cart[k] = 0);
   document.getElementById('cartPanel').classList.add('hidden');
   const scrInput = document.getElementById('screenshotInput');
   if (scrInput) scrInput.value = '';
   loadMenu();
-
   document.getElementById('confirmOrderId').textContent = '#' + orderData.id;
   document.getElementById('confirmPanel').classList.remove('hidden');
   loadMyOrders();
@@ -618,15 +464,13 @@ async function placeOrder() {
 
 async function loadChat() {
   if (!CUSTOMER) return;
-  const { data } = await supabaseClient
-  .from('chat_messages').select('*').eq('customer_id', CUSTOMER.id).order('created_at');
+  const { data } = await supabaseClient.from('chat_messages').select('*').eq('customer_id', CUSTOMER.id).order('created_at');
   renderChat(data || []);
 }
 function renderChat(messages) {
   const box = document.getElementById('chatBox');
-  box.innerHTML = messages.map(m =>
-    `<div class="chat-msg ${m.sender}" data-msg-id="${m.id}">${m.message}</div>`
-  ).join('');
+  if (!box) return;
+  box.innerHTML = messages.map(m => `<div class="chat-msg ${m.sender}" data-msg-id="${m.id}">${m.message}</div>`).join('');
   box.scrollTop = box.scrollHeight;
 }
 async function sendChatMessage() {
@@ -638,12 +482,9 @@ async function sendChatMessage() {
   const message = input.value.trim();
   if (!message) return;
   input.value = '';
-  await supabaseClient.from('chat_messages').insert({
-    customer_id: CUSTOMER.id, sender: 'customer', message
-  });
+  await supabaseClient.from('chat_messages').insert({ customer_id: CUSTOMER.id, sender: 'customer', message });
   loadChat();
 }
-
 let chatChannel = null;
 function subscribeChat() {
   if (!CUSTOMER) return;
@@ -652,7 +493,7 @@ function subscribeChat() {
     chatChannel = null;
   }
   chatChannel = supabaseClient.channel('customer-chat-' + CUSTOMER.id)
-   .on('postgres_changes', {
+  .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'chat_messages',
@@ -660,7 +501,7 @@ function subscribeChat() {
     }, payload => {
       const m = payload.new;
       const box = document.getElementById('chatBox');
-      // avoid double-adding a message we already rendered
+      if (!box) return;
       if (box.querySelector(`[data-msg-id="${m.id}"]`)) return;
       const div = document.createElement('div');
       div.className = `chat-msg ${m.sender}`;
@@ -668,9 +509,7 @@ function subscribeChat() {
       div.textContent = m.message;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
-      if (m.sender === 'admin') {
-        notifyBrowser('New message from Home Kitchen', m.message);
-      }
+      if (m.sender === 'admin') notifyBrowser('New message from Home Kitchen', m.message);
     }).subscribe();
 }
 
@@ -678,8 +517,18 @@ function subscribeChat() {
   initNotifications();
   await loadSettings();
   await loadMenu();
-  await restoreSession(); // this now also opens the chat realtime channel via setCustomer()
+  await restoreSession();
 })();
-// دونوں ناموں سے لاگ آؤٹ چلے گا
+
 window.logoutCustomer = customerLogout;
 window.customer_logout = customerLogout;
+window.showAuthTab = showAuthTab;
+window.showCustomerTab = showCustomerTab;
+window.trackOrderById = trackOrderById;
+window.customerSignup = customerSignup;
+window.customerLogin = customerLogin;
+window.customerUpdateProfile = customerUpdateProfile;
+window.changeQty = changeQty;
+window.placeOrder = placeOrder;
+window.sendChatMessage = sendChatMessage;
+window.togglePaymentFields = togglePaymentFields;
