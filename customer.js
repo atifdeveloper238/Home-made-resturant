@@ -231,6 +231,40 @@ async function customerLogin() {
   }
   setCustomer(data[0]);
 }
+// line 232 ke baad ye paste kar dein
+
+async function customerUpdateProfile() {
+  const name = document.getElementById('profileName').value.trim();
+  const phone = document.getElementById('profilePhone').value.trim();
+  const location = document.getElementById('profileLocation').value.trim();
+  const errEl = document.getElementById('profileErr');
+  
+  if (!name || !phone || !location) {
+    errEl.textContent = 'Please fill in every field.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // purana customer localStorage se
+  const currentCustomer = JSON.parse(localStorage.getItem('customer'));
+  
+  const { data, error } = await supabaseClient.rpc('customer_update_profile', {
+    p_id: currentCustomer.id,
+    p_name: name,
+    p_phone: phone,
+    p_location: location
+  });
+
+  if (error) {
+    errEl.textContent = error.message;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // naya data save kar do
+  setCustomer(data);
+  alert('Profile Updated Successfully!');
+}
 
 function customerLogout() {
   localStorage.removeItem('customer_id');
