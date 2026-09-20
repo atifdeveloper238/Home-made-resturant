@@ -140,20 +140,34 @@ async function trackOrderById() {
 }
 
 async function restoreSession() {
+  try {
+    const saved = localStorage.getItem('customer');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.id) {
+        CUSTOMER = parsed;
+        // background me fresh data le lo
+        const { data } = await supabaseClient.rpc('customer_get', { p_id: parsed.id });
+        if (data && data.length > 0) {
+          setCustomer(data[0]);
+        } else {
+          setCustomer(parsed);
+        }
+        return;
+      }
+    }
+  } catch(e) {}
+  // purani key ka support agar pehle kabhi save hui ho
   const id = localStorage.getItem('customer_id');
   if (!id) return;
-  const { data, error } = await supabaseClient.rpc('customer_get', { p_id: id });
-  if (error || !data || data.length === 0) {
-    localStorage.removeItem('customer_id');
-    return;
-  }
-  setCustomer(data[0]);
+  const { data } = await supabaseClient.rpc('customer_get', { p_id: id });
+  if (data && data.length > 0) setCustomer(data[0]);
 }
-
 function setCustomer(c) {
   if (!c || !c.id) return; // ye line add karo sab se upar
   CUSTOMER = c;
   localStorage.setItem('customer', JSON.stringify(c));
+  localStorage.setItem('customer_id', c.id);
   // baaki aapka purana code waisa hi rehne do
 }
 
@@ -666,3 +680,6 @@ function subscribeChat() {
   await loadMenu();
   await restoreSession(); // this now also opens the chat realtime channel via setCustomer()
 })();
+// دونوں ناموں سے لاگ آؤٹ چلے گا
+window.logoutCustomer = customerLogout;
+window.customer_logout = customerLogout;
