@@ -226,16 +226,25 @@ async function customerUpdateProfile() {
   const phone = document.getElementById('profilePhone').value.trim();
   const location = document.getElementById('profileLocation').value.trim();
   const errEl = document.getElementById('profileErr');
-  
-  if (!name || !phone || !location) {
+  errEl.classList.add('hidden');
+
+  if (!name ||!phone ||!location) {
     errEl.textContent = 'Please fill in every field.';
     errEl.classList.remove('hidden');
     return;
   }
 
-  // purana customer localStorage se
-  const currentCustomer = JSON.parse(localStorage.getItem('customer'));
-  
+  let currentCustomer = null;
+  try {
+    currentCustomer = JSON.parse(localStorage.getItem('customer'));
+  } catch(e) {}
+
+  if (!currentCustomer ||!currentCustomer.id) {
+    errEl.textContent = 'Please login again';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
   const { data, error } = await supabaseClient.rpc('customer_update_profile', {
     p_id: currentCustomer.id,
     p_name: name,
@@ -249,11 +258,13 @@ async function customerUpdateProfile() {
     return;
   }
 
-  // naya data save kar do
-  setCustomer(data);
-  alert('Profile Updated Successfully!');
-}
+  let updated = Array.isArray(data)? data[0] : data;
+  if (!updated) updated = {...currentCustomer, name, phone, location };
 
+  setCustomer(updated);
+  alert('Profile Updated Successfully!');
+  closeModal('profileModal');
+}
 function customerLogout() {
   localStorage.removeItem('customer_id');
   CUSTOMER = null;
