@@ -1,3 +1,19 @@
+// اجازت لینا
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+function phoneParNotificationBhejo(name) {
+  if (Notification.permission === "granted") {
+    new Notification("نیا آرڈر آیا ہے!", {
+      body: name + " نے نیا آرڈر دیا ہے",
+      icon: "/icon-192x192.png"
+    });
+  }
+  // آواز کے لیے
+  let audio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3");
+  audio.play().catch(()=>{});
+}
 // ============================================================
 // ADMIN DASHBOARD LOGIC
 // UPDATED: riders tab, edit-in-place for menu items, size variants,
