@@ -609,18 +609,22 @@ async function deleteMenuItem(id) {
 }
 
 // ---- SETTINGS ----
+// ---- SETTINGS ----
+
 async function loadSettingsForm() {
   const { data } = await supabaseClient.from('settings').select('*').eq('id', 1).single();
   if (!data) return;
-  document.getElementById('orderingToggle').checked = data.ordering_enabled;
+
+  document.getElementById('orderingToggle').checked = data.ordering_enabled ?? true;
   document.getElementById('setKitchenName').value = data.kitchen_name || '';
   document.getElementById('setKitchenPhone').value = data.kitchen_phone || '';
   document.getElementById('setKitchenLocation').value = data.kitchen_location || '';
   document.getElementById('setKitchenDesc').value = data.kitchen_description || '';
   document.getElementById('setEpName').value = data.easypaisa_account_name || '';
-  document.getElementById('setEpNumber').value = data.easypaisa_account_number || '';
-  document.getElementById('setDeliveryCharge').value = data.delivery_charge || 0;
+  document.getElementById('setEpNumber').value = data.easypaisa_account_number || data.easypaisa_number || '';
+  document.getElementById('setDeliveryCharge').value = data.delivery_charge ?? data.delivery_charges ?? 100;
 }
+
 async function saveSettings() {
   const update = {
     kitchen_name: document.getElementById('setKitchenName').value.trim(),
@@ -629,13 +633,25 @@ async function saveSettings() {
     kitchen_description: document.getElementById('setKitchenDesc').value.trim(),
     easypaisa_account_name: document.getElementById('setEpName').value.trim(),
     easypaisa_account_number: document.getElementById('setEpNumber').value.trim(),
-    delivery_charge: parseFloat(document.getElementById('setDeliveryCharge').value) || 0
+    easypaisa_number: document.getElementById('setEpNumber').value.trim(), // دونوں میں سیو ہوگا تاکہ کبھی خالی نہ ہو
+    delivery_charge: parseInt(document.getElementById('setDeliveryCharge').value) || 100,
+    delivery_charges: parseInt(document.getElementById('setDeliveryCharge').value) || 100,
+    ordering_enabled: document.getElementById('orderingToggle').checked
   };
-  await supabaseClient.from('settings').update(update).eq('id', 1);
+
+  const { error } = await supabaseClient.from('settings').update(update).eq('id', 1);
+
   const saved = document.getElementById('settingsSaved');
+  if (error) {
+    alert("Save نہیں ہوا: " + error.message);
+    console.log(error);
+    return;
+  }
+  
   saved.classList.remove('hidden');
   setTimeout(() => saved.classList.add('hidden'), 2000);
 }
+
 
 // ---- ADMIN CHAT ----
 async function loadChatCustomerList() {
