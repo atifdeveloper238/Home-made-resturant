@@ -1,0 +1,5 @@
+"permissions": ["storage", "alarms", "notifications", "offscreen"],
+"web_accessible_resources": [{
+  "resources": ["notification.mp3", "offscreen.html"],
+  "matches": ["<all_urls>"]
+}]
