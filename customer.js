@@ -284,11 +284,8 @@ async function updateAccount() {
     return;
   }
 
-  const currentCustomer = JSON.parse(localStorage.getItem('customer'));
-  if (!currentCustomer || !currentCustomer.id) {
-    alert('Please login again');
-    return;
-  }
+let currentCustomer = (typeof CUSTOMER !== 'undefined' && CUSTOMER && CUSTOMER.id) ? CUSTOMER : null;
+if (!currentCustomer) { try { currentCustomer = JSON.parse(localStorage.getItem('customer')); } catch(e) {} }
 
   const { data, error } = await supabaseClient.rpc('customer_update_profile', {
     p_id: currentCustomer.id,
