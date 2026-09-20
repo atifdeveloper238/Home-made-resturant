@@ -275,34 +275,35 @@ function customerLogout() {
 }
 
 async function updateAccount() {
-  const name = document.getElementById('custName')?.value.trim() || document.getElementById('profileName')?.value.trim();
-  const phone = document.getElementById('custPhone')?.value.trim() || document.getElementById('profilePhone')?.value.trim();
-  const location = document.getElementById('custLocation')?.value.trim() || document.getElementById('profileLocation')?.value.trim();
+  const name = (document.getElementById('custName') || document.getElementById('profileName'))?.value.trim();
+  const phone = (document.getElementById('custPhone') || document.getElementById('profilePhone'))?.value.trim();
+  const location = (document.getElementById('custLocation') || document.getElementById('profileLocation'))?.value.trim();
 
-  if (!name || !phone || !location) {
-    alert('Please fill in every field.');
-    return;
+  if (!name || !phone || !location) { alert('Please fill every field'); return; }
+
+  // ID اب دونوں جگہ سے چیک کرے گا
+  let currentCustomer = null;
+  if (typeof CUSTOMER !== 'undefined' && CUSTOMER && CUSTOMER.id) {
+    currentCustomer = CUSTOMER;
+  } else {
+    try { currentCustomer = JSON.parse(localStorage.getItem('customer')); } catch(e){}
   }
 
-let currentCustomer = (typeof CUSTOMER !== 'undefined' && CUSTOMER && CUSTOMER.id) ? CUSTOMER : null;
-if (!currentCustomer) { try { currentCustomer = JSON.parse(localStorage.getItem('customer')); } catch(e) {} }
+  if (!currentCustomer || !currentCustomer.id) {
+    alert('Session expired, please logout and login again');
+    return;
+  }
 
   const { data, error } = await supabaseClient.rpc('customer_update_profile', {
-    p_id: currentCustomer.id,
-    p_name: name,
-    p_phone: phone,
-    p_location: location
+    p_id: currentCustomer.id, p_name: name, p_phone: phone, p_location: location
   });
 
-  if (error) {
-    alert("Update Failed: " + error.message);
-    console.error(error);
-    return;
-  }
+  if (error) { alert(error.message); return; }
 
+  CUSTOMER = data;
   localStorage.setItem('customer', JSON.stringify(data));
-  setCustomer(data);
-  alert('Profile Updated Successfully! Name, Phone, Location sab change ho gaya hai.');
+  if(typeof setCustomer === 'function') setCustomer(data);
+  alert('Profile Updated Successfully!');
 }
 
 async function loadSettings() {
