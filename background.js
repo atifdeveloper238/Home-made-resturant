@@ -10,8 +10,8 @@
 // in client-side code, it is NOT the service_role secret key).
 // ============================================================
 
-const SUPABASE_URL = "https://ddlehbvmwdhqmtzjdvdk.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_hPd-CJO0256e4EhS9GkBgA_xJMTrKh-";
+const SUPABASE_URL = "https://kahmpvgqzxarsegnrogr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_rlRMyly8iVoOlqn9MMRVow_jgjVaWtx";
 const POLL_INTERVAL_SECONDS = 20;
 
 async function checkForNewOrders() {
