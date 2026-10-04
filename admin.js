@@ -288,7 +288,7 @@ async function printReceipt(id) {
       itemsText = data.items.map(i => `${i.name} x${i.qty} = Rs.${i.price * i.qty}`).join('\n');
     } catch(e) { itemsText = JSON.stringify(data.items); }
 
-    let bill = `      Delicious\n   Home Made Foods\n------------------------------\nOrder #${data.id}\n${new Date(data.created_at).toLocaleString()}\n------------------------------\n${data.customer_name} - ${data.customer_phone}\n${data.customer_location}\n------------------------------\n${itemsText}\nDelivery: Rs.${data.delivery_charge}\n------------------------------\nTOTAL: Rs.${data.total}\nPayment: ${data.payment_method}\n------------------------------\n        Shukria!\n\n\n`;
+    let bill = `      Delicious \n   Home Made Foods \n------------------------------\nOrder #${data.id}\n${new Date(data.created_at).toLocaleString()}\n------------------------------\n${data.customer_name} - ${data.customer_phone}\n${data.customer_location}\n------------------------------\n${itemsText}\nDelivery: Rs.${data.delivery_charge}\n------------------------------\nTOTAL: Rs.${data.total}\nPayment: ${data.payment_method}\n------------------------------\n        Shukria!\n\n\n`;
 
     let encoded = new TextEncoder().encode(bill);
     for (let i = 0; i < encoded.length; i += 100) {
